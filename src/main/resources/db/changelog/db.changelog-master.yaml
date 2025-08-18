@@ -1,0 +1,463 @@
+databaseChangeLog:
+  - changeSet:
+      id: 1
+      author: max
+      changes:
+        - createTable:
+            tableName: card_status
+            columns:
+              - column:
+                  name: id
+                  type: bigserial
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: name
+                  type: varchar(100)
+                  constraints:
+                    nullable: false
+                    unique: true
+              - column:
+                  name: description
+                  type: text
+                  constraints:
+                    nullable: true
+              - column:
+                  name: is_active
+                  type: boolean
+                  defaultValueBoolean: true
+                  constraints:
+                    nullable: false
+              - column:
+                  name: is_blocked
+                  type: boolean
+                  defaultValueBoolean: false
+                  constraints:
+                    nullable: false
+              - column:
+                  name: is_expired
+                  type: boolean
+                  defaultValueBoolean: false
+                  constraints:
+                    nullable: false
+  - changeSet:
+      id: 2
+      author: max
+      changes:
+        - sql:
+            dbms: postgresql
+            sql: |
+              INSERT INTO card_status (name, description, is_active, is_blocked, is_expired) VALUES
+              ('ACTIVE', 'Активированная карта', true, false, false),
+              ('BLOCKED', 'Заблокированная карта', false, true, false),
+              ('NONACTIVE', 'Неактивированная карта', false, false, false),
+              ('EXPIRED', 'Истекшая карта', false, false, true);
+  # -------- Сущность ролей --------
+  - changeSet:
+      id: 3
+      author: max
+      changes:
+        - createTable:
+            tableName: role
+            columns:
+              - column:
+                  name: id
+                  type: bigserial
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: name
+                  type: varchar(255)
+                  constraints:
+                    nullable: false
+                    unique: true
+              - column:
+                  name: is_admin
+                  type: boolean
+                  constraints:
+                    nullable: false
+   # -------- Заполнение таблицы ролей --------
+  - changeSet:
+      id: 4
+      author: max
+      changes:
+        - sql:
+            dbms: postgresql
+            sql: |
+              INSERT INTO role (name, is_admin) VALUES
+              ('ADMIN', true),
+              ('USER', false);
+  # -------- Сущность пользователя --------
+  - changeSet:
+      id: 5
+      author: max
+      changes:
+        - createTable:
+            tableName: users
+            columns:
+              - column:
+                  name: id
+                  type: bigserial
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: username
+                  type: varchar(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: password
+                  type: varchar(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: role_id
+                  type: bigserial
+                  constraints:
+                    nullable: false
+              - column:
+                  name: email
+                  type: varchar(255)
+                  constraints:
+                    nullable: false
+  - changeSet:
+      id: 6
+      author: max
+      changes:
+        - sql:
+            dbms: postgresql
+            sql: "ALTER TABLE users ADD CONSTRAINT fk_user_role FOREIGN KEY (role_id) REFERENCES role(id) ON DELETE CASCADE"
+
+  # -------- Сущность карт --------
+  - changeSet:
+      id: 7
+      author: max
+      changes:
+        - createTable:
+            tableName: card
+            columns:
+              - column:
+                  name: id
+                  type: bigserial
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: card_number
+                  type: text
+                  constraints:
+                    nullable: false
+                    unique: true
+              - column:
+                  name: user_id
+                  type: bigint
+                  constraints:
+                    nullable: false
+              - column:
+                  name: expiration_date
+                  type: date
+                  constraints:
+                    nullable: false
+              - column:
+                  name: status_id
+                  type: bigint
+                  constraints:
+                    nullable: false
+              - column:
+                  name: balance
+                  type: decimal(10,2)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: timestamp
+                  defaultValueComputed: "CURRENT_TIMESTAMP"
+                  constraints:
+                    nullable: false
+  - changeSet:
+      id: 8
+      author: max
+      changes:
+        - sql:
+            dbms: postgresql
+            sql: "ALTER TABLE card ADD CONSTRAINT fk_card_status FOREIGN KEY (status_id) REFERENCES card_status(id) ON DELETE RESTRICT"
+        - sql:
+            dbms: postgresql
+            sql: "ALTER TABLE card ADD CONSTRAINT fk_card_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE"
+
+  # -------- Сущность транзакций --------
+  - changeSet:
+      id: 9
+      author: max
+      changes:
+        - createTable:
+            tableName: transaction
+            columns:
+              - column:
+                  name: id
+                  type: bigserial
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: card_from_id
+                  type: bigint
+                  constraints:
+                    nullable: true
+              - column:
+                  name: card_to_id
+                  type: bigint
+                  constraints:
+                    nullable: true
+              - column:
+                  name: amount
+                  type: decimal(10,2)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: fee_amount
+                  type: decimal(10,2)
+                  defaultValue: "0.00"
+                  constraints:
+                    nullable: false
+              - column:
+                  name: total_amount
+                  type: decimal(10,2)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: transaction_type
+                  type: varchar(50)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: status
+                  type: varchar(50)
+                  defaultValue: "pending"
+                  constraints:
+                    nullable: false
+              - column:
+                  name: transaction_date
+                  type: timestamp
+                  defaultValueComputed: "CURRENT_TIMESTAMP"
+                  constraints:
+                    nullable: false
+              - column:
+                  name: processed_date
+                  type: timestamp
+                  constraints:
+                    nullable: true
+              - column:
+                  name: description
+                  type: text
+                  constraints:
+                    nullable: true
+              - column:
+                  name: reference_number
+                  type: varchar(50)
+                  constraints:
+                    nullable: true
+                    unique: true
+              - column:
+                  name: merchant_name
+                  type: varchar(255)
+                  constraints:
+                    nullable: true
+              - column:
+                  name: merchant_category
+                  type: varchar(100)
+                  constraints:
+                    nullable: true
+              - column:
+                  name: location
+                  type: varchar(255)
+                  constraints:
+                    nullable: true
+              - column:
+                  name: currency
+                  type: varchar(3)
+                  defaultValue: "RUB"
+                  constraints:
+                    nullable: false
+              - column:
+                  name: exchange_rate
+                  type: decimal(10,6)
+                  defaultValue: "1.000000"
+                  constraints:
+                    nullable: false
+              - column:
+                  name: original_amount
+                  type: decimal(10,2)
+                  constraints:
+                    nullable: true
+              - column:
+                  name: original_currency
+                  type: varchar(3)
+                  constraints:
+                    nullable: true
+              - column:
+                  name: is_suspicious
+                  type: boolean
+                  defaultValueBoolean: false
+                  constraints:
+                    nullable: false
+              - column:
+                  name: fraud_score
+                  type: integer
+                  defaultValueNumeric: 0
+                  constraints:
+                    nullable: false
+              - column:
+                  name: notes
+                  type: text
+                  constraints:
+                    nullable: true
+
+  - changeSet:
+      id: 10
+      author: max
+      changes:
+        - sql:
+            dbms: postgresql
+            sql: "ALTER TABLE transaction ADD CONSTRAINT fk_transaction_card_from FOREIGN KEY (card_from_id) REFERENCES card(id)"
+        - sql:
+            dbms: postgresql
+            sql: "ALTER TABLE transaction ADD CONSTRAINT fk_transaction_card_to FOREIGN KEY (card_to_id) REFERENCES card(id)"
+
+  # -------- Упрощение таблицы транзакций --------
+  - changeSet:
+      id: 12
+      author: max
+      changes:
+        - dropColumn:
+            tableName: transaction
+            columnName: fee_amount
+        - dropColumn:
+            tableName: transaction
+            columnName: merchant_name
+        - dropColumn:
+            tableName: transaction
+            columnName: merchant_category
+        - dropColumn:
+            tableName: transaction
+            columnName: location
+        - dropColumn:
+            tableName: transaction
+            columnName: exchange_rate
+        - dropColumn:
+            tableName: transaction
+            columnName: original_amount
+        - dropColumn:
+            tableName: transaction
+            columnName: original_currency
+        - dropColumn:
+            tableName: transaction
+            columnName: is_suspicious
+        - dropColumn:
+            tableName: transaction
+            columnName: fraud_score
+        - dropColumn:
+            tableName: transaction
+            columnName: notes
+
+  # -------- Сущность refresh tokens --------
+  - changeSet:
+      id: 11
+      author: max
+      changes:
+        - createTable:
+            tableName: refresh_tokens
+            columns:
+              - column:
+                  name: id
+                  type: bigserial
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: token
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+                    unique: true
+              - column:
+                  name: username
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: expiry_date
+                  type: TIMESTAMP
+                  constraints:
+                    nullable: false
+              - column:
+                  name: is_revoked
+                  type: BOOLEAN
+                  defaultValueBoolean: false
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: TIMESTAMP
+                  defaultValueComputed: CURRENT_TIMESTAMP
+                  constraints:
+                    nullable: false
+              - column:
+                  name: last_used_at
+                  type: TIMESTAMP
+                  constraints:
+                    nullable: true
+        - createIndex:
+            tableName: refresh_tokens
+            indexName: idx_refresh_tokens_token
+            columns:
+              - column:
+                  name: token
+        - createIndex:
+            tableName: refresh_tokens
+            indexName: idx_refresh_tokens_username
+            columns:
+              - column:
+                  name: username
+        - createIndex:
+            tableName: refresh_tokens
+            indexName: idx_refresh_tokens_expiry
+            columns:
+              - column:
+                  name: expiry_date 
+
+  # -------- Добавление полей для запроса на блокировку карты --------
+  - changeSet:
+      id: 13
+      author: max
+      changes:
+        - addColumn:
+            tableName: card
+            columns:
+              - column:
+                  name: has_block_request
+                  type: BOOLEAN
+                  defaultValueBoolean: false
+                  constraints:
+                    nullable: false
+              - column:
+                  name: block_request_reason
+                  type: VARCHAR(500)
+                  constraints:
+                    nullable: true
+              - column:
+                  name: block_request_date
+                  type: TIMESTAMP
+                  constraints:
+                    nullable: true
+        - createIndex:
+            tableName: card
+            indexName: idx_card_block_request
+            columns:
+              - column:
+                  name: has_block_request 

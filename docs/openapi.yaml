@@ -1,0 +1,193 @@
+openapi: 3.0.3
+info:
+  title: Bank Cards REST API
+  description: REST API для управления банковскими картами и пользователями
+  version: 1.0.0
+  license:
+    name: MIT License
+    url: https://opensource.org/licenses/MIT
+servers:
+  - url: http://localhost:8080
+    description: Local Development Server
+security:
+  - Bearer Authentication: []
+components:
+  securitySchemes:
+    Bearer Authentication:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Введите JWT токен в формате: Bearer {token}
+  schemas:
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        username:
+          type: string
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          writeOnly: true
+    BankCard:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        cardNumber:
+          type: string
+        cardholderName:
+          type: string
+        expiryDate:
+          type: string
+          format: date
+        cvv:
+          type: string
+          writeOnly: true
+        userId:
+          type: integer
+          format: int64
+    AuthRequest:
+      type: object
+      required:
+        - username
+        - password
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+    AuthResponse:
+      type: object
+      properties:
+        token:
+          type: string
+        type:
+          type: string
+          example: Bearer
+paths:
+  /api/auth/register:
+    post:
+      summary: Регистрация пользователя
+      tags:
+        - Authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/User'
+      responses:
+        '201':
+          description: Пользователь создан
+        '400':
+          description: Ошибка валидации
+  /api/auth/login:
+    post:
+      summary: Вход в систему
+      tags:
+        - Authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AuthRequest'
+      responses:
+        '200':
+          description: Успешный вход
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '401':
+          description: Неверные учетные данные
+  /api/cards:
+    get:
+      summary: Получить все карты пользователя
+      tags:
+        - Bank Cards
+      security:
+        - Bearer Authentication: []
+      responses:
+        '200':
+          description: Список карт
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/BankCard'
+        '401':
+          description: Не авторизован
+    post:
+      summary: Создать новую карту
+      tags:
+        - Bank Cards
+      security:
+        - Bearer Authentication: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BankCard'
+      responses:
+        '201':
+          description: Карта создана
+        '400':
+          description: Ошибка валидации
+        '401':
+          description: Не авторизован
+  /api/cards/{id}:
+    put:
+      summary: Обновить карту
+      tags:
+        - Bank Cards
+      security:
+        - Bearer Authentication: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BankCard'
+      responses:
+        '200':
+          description: Карта обновлена
+        '404':
+          description: Карта не найдена
+        '401':
+          description: Не авторизован
+    delete:
+      summary: Удалить карту
+      tags:
+        - Bank Cards
+      security:
+        - Bearer Authentication: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '204':
+          description: Карта удалена
+        '404':
+          description: Карта не найдена
+        '401':
+          description: Не авторизован 

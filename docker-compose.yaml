@@ -1,0 +1,25 @@
+services:
+  postgres:
+    image: postgres:latest
+    environment:
+      - POSTGRES_DB=bank
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+      - POSTGRES_USER=bankadmin
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+
+  bank-app:
+    build: .
+    ports:
+      - "8080:8080"
+    depends_on:
+      - postgres
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/bank
+      - SPRING_DATASOURCE_USERNAME=bankadmin
+      - SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD}
+
+volumes:
+  postgres-data:
